@@ -29,7 +29,7 @@ export const FileInputZone: React.FC<FileInputZoneProps> = ({
     onChange,
     error,
     accept,
-    maxSizeMb = 50,
+    maxSizeMb = 300,
     disabled = false,
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);

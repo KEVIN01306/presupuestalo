@@ -217,7 +217,7 @@ model ApiKey {
   @@index([keyHash, isActive])
   @@index([projectId])
   @@map("api_keys")
-}
+} 
 
 model OtpToken {
   id             String    @id @default(uuid())

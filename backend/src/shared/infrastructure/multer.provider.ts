@@ -2,7 +2,7 @@ import multer from "multer";
 import type { Request, Response, NextFunction } from "express";
 import AppError from "../errors/AppError.js";
 
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE_BYTES = 300 * 1024 * 1024; // 300MB
 
 const ALLOWED_MIME_TYPES = new Set([
     // Images
