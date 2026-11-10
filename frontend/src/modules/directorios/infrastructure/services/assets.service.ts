@@ -8,6 +8,14 @@ import type {
     CopyAssetPayload,
 } from '../../domain/dto/assets.dto';
 
+export interface UploadProgressData {
+    loaded: number;
+    total: number;
+    percentage: number;
+    speed: number; // bytes per second
+}
+
+export type UploadProgressCallback = (progress: UploadProgressData) => void;
 
 interface ApiResponse<T> {
     status: string;
@@ -19,6 +27,44 @@ interface ApiResponse<T> {
         offset: number;
     };
 }
+
+const createProgressHandler = (fileSize: number, onProgress?: UploadProgressCallback) => {
+    let lastTime = performance.now();
+    let lastLoaded = 0;
+    let smoothedSpeed = 0;
+
+    return (progressEvent: any) => {
+        if (!onProgress) return;
+
+        const loaded = progressEvent.loaded || 0;
+        const total = progressEvent.total || fileSize || 1;
+        const percentage = Math.min(100, Math.round((loaded * 100) / total));
+
+        const now = performance.now();
+        const timeDiff = (now - lastTime) / 1000;
+
+        let currentSpeed = 0;
+        if (progressEvent.rate && progressEvent.rate > 0) {
+            currentSpeed = progressEvent.rate;
+        } else if (timeDiff >= 0.2) {
+            const bytesDiff = loaded - lastLoaded;
+            currentSpeed = bytesDiff / timeDiff;
+            lastTime = now;
+            lastLoaded = loaded;
+        }
+
+        if (currentSpeed > 0) {
+            smoothedSpeed = smoothedSpeed === 0 ? currentSpeed : smoothedSpeed * 0.7 + currentSpeed * 0.3;
+        }
+
+        onProgress({
+            loaded,
+            total,
+            percentage,
+            speed: smoothedSpeed,
+        });
+    };
+};
 
 export const getAssetsPaginated = async (
     filters: AssetFilters = {}
@@ -49,7 +95,11 @@ export const getAssetById = async (id: string): Promise<AssetDto> => {
     return response.data.data;
 };
 
-export const createAsset = async (payload: CreateAssetPayload): Promise<AssetDto> => {
+export const createAsset = async (
+    payload: CreateAssetPayload,
+    onProgress?: UploadProgressCallback,
+    signal?: AbortSignal
+): Promise<AssetDto> => {
     const formData = new FormData();
     formData.append('name', payload.name);
     if (payload.description) formData.append('description', payload.description);
@@ -66,13 +116,18 @@ export const createAsset = async (payload: CreateAssetPayload): Promise<AssetDto
         headers: {
             'Content-Type': 'multipart/form-data',
         },
+        timeout: 600000, // 10 minutes timeout for uploads
+        signal,
+        onUploadProgress: createProgressHandler(payload.file.size, onProgress),
     });
     return response.data.data;
 };
 
 export const updateAsset = async (
     id: string,
-    payload: UpdateAssetPayload
+    payload: UpdateAssetPayload,
+    onProgress?: UploadProgressCallback,
+    signal?: AbortSignal
 ): Promise<AssetDto> => {
     const formData = new FormData();
     if (payload.name !== undefined) formData.append('name', payload.name);
@@ -94,6 +149,11 @@ export const updateAsset = async (
         headers: {
             'Content-Type': 'multipart/form-data',
         },
+        timeout: 600000, // 10 minutes timeout for uploads
+        signal,
+        onUploadProgress: payload.file
+            ? createProgressHandler(payload.file.size, onProgress)
+            : undefined,
     });
     return response.data.data;
 };
