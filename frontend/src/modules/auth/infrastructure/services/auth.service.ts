@@ -42,10 +42,10 @@ export const googleLoginUser = async (idToken: string): Promise<LoginResponseDto
     return response.data.data;
 };
 
-export const refreshSession = async (): Promise<LoginResponseDto> => {
+export const refreshSession = async (refreshToken?: string | null): Promise<LoginResponseDto> => {
     const response = await axios.post<ApiResponse<LoginResponseDto>>(
         `${AUTH_BASE_URL}/refresh`,
-        {},
+        refreshToken ? { refreshToken } : {},
         { withCredentials: true }
     );
     return response.data.data;

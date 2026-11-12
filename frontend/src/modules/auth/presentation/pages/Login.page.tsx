@@ -29,7 +29,7 @@ const LoginPage = () => {
         setServerError(null);
         try {
             const res = await loginUser(values);
-            setAuth(res.accessToken, res.user);
+            setAuth(res.accessToken, res.user, res.refreshToken);
             navigate(res.user.isVerify === false ? '/auth/verify-account' : from, { replace: true });
         } catch {
             setServerError('Correo o contraseña incorrectos. Intenta de nuevo.');

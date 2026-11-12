@@ -37,13 +37,14 @@ const resolveTeamState = (
 
 interface AuthState {
     accessToken: string | null;
+    refreshToken: string | null;
     user: AuthUser | null;
     teams: AuthTeamMembership[];
     activeTeamId: string | null;
     activeTeam: AuthTeam | null;
     activeRole: TeamRole | null;
     isRestoringSession: boolean;
-    setAuth: (token: string, user: AuthUser) => void;
+    setAuth: (token: string, user: AuthUser, refreshToken?: string | null) => void;
     setToken: (token: string) => void;
     setUser: (user: AuthUser | null) => void;
     switchTeam: (teamId: string) => void;
@@ -55,6 +56,7 @@ export const useAuthStore = create<AuthState>()(
     persist(
         (set, get) => ({
             accessToken: null,
+            refreshToken: null,
             user: null,
             teams: [],
             activeTeamId: null,
@@ -62,12 +64,17 @@ export const useAuthStore = create<AuthState>()(
             activeRole: null,
             isRestoringSession: false,
 
-            setAuth: (token, user) => {
+            setAuth: (token, user, refreshToken) => {
                 const resolved = resolveTeamState(
                     user.teamMemberships ?? [],
                     get().activeTeamId
                 );
-                set({ accessToken: token, user, ...resolved });
+                set({
+                    accessToken: token,
+                    ...(refreshToken !== undefined ? { refreshToken } : {}),
+                    user,
+                    ...resolved,
+                });
             },
 
             setToken: (token) => set({ accessToken: token }),
@@ -100,6 +107,7 @@ export const useAuthStore = create<AuthState>()(
             clearAuth: () =>
                 set({
                     accessToken: null,
+                    refreshToken: null,
                     user: null,
                     teams: [],
                     activeTeamId: null,
@@ -111,6 +119,7 @@ export const useAuthStore = create<AuthState>()(
             name: 'auth-storage',
             partialize: (state) => ({
                 accessToken: state.accessToken,
+                refreshToken: state.refreshToken,
                 activeTeamId: state.activeTeamId,
             }),
         }

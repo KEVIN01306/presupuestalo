@@ -12,11 +12,20 @@ import type { VerifyOtpUseCase } from "../application/verify-otp.usecase.js";
 import type { ResetPasswordWithOtpUseCase } from "../application/reset-password-with-otp.usecase.js";
 import BaseController from "@presentation/base.controller.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const COOKIE_OPTIONS = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict" as const,
+    secure: isProduction,
+    sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
+};
+
+const CLEAR_COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: (isProduction ? "none" : "lax") as "none" | "lax",
     path: "/",
 };
 
@@ -48,7 +57,7 @@ export class AuthController extends BaseController {
             res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
 
             return res.status(201).json(
-                ResponseHttp.success("User registered successfully", { accessToken, user })
+                ResponseHttp.success("User registered successfully", { accessToken, refreshToken, user })
             );
         } catch (error) {
             next(error);
@@ -66,7 +75,7 @@ export class AuthController extends BaseController {
             res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
 
             return res.status(200).json(
-                ResponseHttp.success("Google login successful", { accessToken, user })
+                ResponseHttp.success("Google login successful", { accessToken, refreshToken, user })
             );
         } catch (error) {
             next(error);
@@ -86,7 +95,7 @@ export class AuthController extends BaseController {
             res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
 
             return res.status(200).json(
-                ResponseHttp.success("Login successful", { accessToken, user })
+                ResponseHttp.success("Login successful", { accessToken, refreshToken, user })
             );
         } catch (error) {
             next(error);
@@ -102,12 +111,7 @@ export class AuthController extends BaseController {
                 await this.logoutUseCase.execute(userCtx.id, auditContext);
             }
 
-            res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-                path: "/",
-            });
+            res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, CLEAR_COOKIE_OPTIONS);
 
             return res.status(200).json(
                 ResponseHttp.success("Logout successful", null)
@@ -119,9 +123,10 @@ export class AuthController extends BaseController {
 
     refresh = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const tokenReceived = req.cookies.refreshToken;
+            const tokenReceived =
+                req.cookies?.[REFRESH_TOKEN_COOKIE_NAME] || req.body?.refreshToken;
 
-            if (!tokenReceived) {
+            if (!tokenReceived || typeof tokenReceived !== "string") {
                 throw new AppError("You must log in again", "MISSING_COOKIE", 401);
             }
 
@@ -130,7 +135,7 @@ export class AuthController extends BaseController {
             res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
 
             return res.status(200).json(
-                ResponseHttp.success("Token renewed", { accessToken, user })
+                ResponseHttp.success("Token renewed", { accessToken, refreshToken, user })
             );
         } catch (error) {
             next(error);

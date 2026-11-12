@@ -51,8 +51,9 @@ api.interceptors.response.use(
                     if (!refreshPromise) {
                         refreshPromise = (async () => {
                             try {
-                                const { accessToken, user } = await refreshSession();
-                                useAuthStore.getState().setAuth(accessToken, user);
+                                const currentRefreshToken = useAuthStore.getState().refreshToken;
+                                const { accessToken, refreshToken, user } = await refreshSession(currentRefreshToken);
+                                useAuthStore.getState().setAuth(accessToken, user, refreshToken);
                                 return accessToken;
                             } finally {
                                 refreshPromise = null;

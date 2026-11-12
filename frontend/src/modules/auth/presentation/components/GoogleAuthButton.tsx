@@ -65,7 +65,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
         setLoading(true);
         try {
             const response = await googleLoginUser(credentialResponse.credential);
-            setAuth(response.accessToken, response.user);
+            setAuth(response.accessToken, response.user, response.refreshToken);
             navigate(redirectTo, { replace: true });
         } catch {
             onError?.('No se pudo iniciar sesión con Google. Intenta de nuevo.');

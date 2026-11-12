@@ -25,7 +25,7 @@ const RegisterPage = () => {
         setServerError(null);
         try {
             const res = await registerUser({ firstName, lastName, email, password });
-            setAuth(res.accessToken, res.user);
+            setAuth(res.accessToken, res.user, res.refreshToken);
             navigate('/', { replace: true });
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
