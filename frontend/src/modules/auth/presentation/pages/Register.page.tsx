@@ -6,7 +6,6 @@ import {
     Box, Card, CardContent, TextField, Button, Typography,
     Alert, CircularProgress, Stack, Divider, Link,
 } from '@mui/material';
-import { AccountBalanceWalletOutlined } from '@mui/icons-material';
 import { registerSchema, type RegisterFormValues } from '../../domain/schemas/auth.schemas';
 import { registerUser } from '../../infrastructure/services/auth.service';
 import { useAuthStore } from '../../../../core/store/authStore';
@@ -22,10 +21,10 @@ const RegisterPage = () => {
         defaultValues: { firstName: '', lastName: '', email: '', password: '', confirmPassword: '' },
     });
 
-    const onSubmit: SubmitHandler<RegisterFormValues> = async ({ confirmPassword: _, ...payload }) => {
+    const onSubmit: SubmitHandler<RegisterFormValues> = async ({ firstName, lastName, email, password }) => {
         setServerError(null);
         try {
-            const res = await registerUser(payload);
+            const res = await registerUser({ firstName, lastName, email, password });
             setAuth(res.accessToken, res.user);
             navigate('/', { replace: true });
         } catch (err: unknown) {
@@ -38,9 +37,12 @@ const RegisterPage = () => {
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', p: 2 }}>
             <Box sx={{ width: '100%', maxWidth: 460 }}>
                 <Stack sx={{ alignItems: 'center', mb: 3, gap: 1 }}>
-                    <Box sx={{ width: 44, height: 44, borderRadius: 2, bgcolor: '#e8f0fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.main' }}>
-                        <AccountBalanceWalletOutlined />
-                    </Box>
+                    <Box
+                        component="img"
+                        src="/logo.png"
+                        alt="Presupuestalo"
+                        sx={{ height: 52, width: 'auto', borderRadius: 2, objectFit: 'contain', mx: 'auto', mb: 1.5 }}
+                    />
                     <Typography variant="h2" sx={{ textAlign: 'center', fontWeight: 500 }}>
                         Crear cuenta
                     </Typography>

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Box, Drawer, List, Typography, Stack, Divider } from '@mui/material';
-import { AccountBalanceWalletOutlined } from '@mui/icons-material';
 import MenuItems from './menuItems';
 import SidebarItem from './SidebarItem';
 import { useSidebar, SIDEBAR_EXPANDED_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from './SidebarContext';
@@ -22,20 +21,17 @@ const SidebarContent: React.FC = () => {
                 }}
             >
                 <Box
+                    component="img"
+                    src="/icon.png"
+                    alt="Presupuestalo"
                     sx={{
                         width: 32,
                         height: 32,
                         borderRadius: '8px',
-                        bgcolor: '#e8f0fe',
-                        color: '#1a73e8',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        objectFit: 'contain',
                         flexShrink: 0,
                     }}
-                >
-                    <AccountBalanceWalletOutlined fontSize="small" />
-                </Box>
+                />
                 {!isCollapsed && (
                     <Typography variant="h5" noWrap sx={{ fontWeight: 500, color: '#202124' }}>
                         Presupuesto

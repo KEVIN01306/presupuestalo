@@ -6,7 +6,7 @@ import {
     Box, Card, CardContent, TextField, Button, Typography,
     InputAdornment, IconButton, Alert, CircularProgress, Stack, Divider, Link,
 } from '@mui/material';
-import { Visibility, VisibilityOff, AccountBalanceWalletOutlined } from '@mui/icons-material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { loginSchema, type LoginFormValues } from '../../domain/schemas/auth.schemas';
 import { loginUser } from '../../infrastructure/services/auth.service';
 import { useAuthStore } from '../../../../core/store/authStore';
@@ -40,9 +40,12 @@ const LoginPage = () => {
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', p: 2 }}>
             <Box sx={{ width: '100%', maxWidth: 440 }}>
                 <Stack sx={{ alignItems: 'center', mb: 3.5, gap: 1 }}>
-                    <Box sx={{ width: 44, height: 44, borderRadius: 2, bgcolor: '#e8f0fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.main' }}>
-                        <AccountBalanceWalletOutlined />
-                    </Box>
+                    <Box
+                        component="img"
+                        src="/logo.png"
+                        alt="Presupuestalo"
+                        sx={{ height: 52, width: 'auto', borderRadius: 2, objectFit: 'contain', mx: 'auto', mb: 1.5 }}
+                    />
                     <Typography variant="h2" sx={{ textAlign: 'center', fontWeight: 500 }}>
                         Bienvenido
                     </Typography>
