@@ -101,3 +101,4 @@ Plataforma web multi-usuario para la gestión de **presupuestos personales y col
 - **#Task-13** (`VERIFIED`): Backend `GET /api/budgets/:budgetId/summary` ampliado con `analytics` (`dailySpendingByMember`, `weekdaySpending`, `topItems`) calculado con `decimal.js`.
 - **#Task-14** (`VERIFIED`): Frontend `chart.js` + `react-chartjs-2` con 3 gráficas (`DailySpendingLineChart`, `WeekdaySpendingRadarChart`, `TopSpentItemsBarChart`) integradas en `Dashboard.page.tsx` y `BudgetSummaryTab.tsx` (`<= 105` líneas por `.tsx`).
 - **#Task-15** (`VERIFIED`): Ajustes mobile-first en las 3 gráficas (`minWidth: 0`, `overflow: hidden`, alturas/padding responsivos, etiquetas cortas en celular y `<= 117` líneas por `.tsx`).
+- **#Task-16** (`VERIFIED`): Frontend preparado para despliegue en Cloudflare (`wrangler` v4 en `devDependencies`, `wrangler.jsonc`, `public/_redirects`, `public/_headers`, `.env.example` y scripts `deploy` / `deploy:pages` en `frontend/package.json`).
