@@ -1,11 +1,13 @@
 import type { AuthUser } from '../interfaces/auth.interfaces';
-import type { LoginFormValues } from '../schemas/auth.schemas';
+import type { LoginFormValues, RegisterFormValues } from '../schemas/auth.schemas';
 
-/**
- * LoginRequestDto — derived from the Zod schema (single source of truth).
- * This ensures the form values type and the API request type are always in sync.
- */
 export type LoginRequestDto = LoginFormValues;
+
+export type RegisterRequestDto = Omit<RegisterFormValues, 'confirmPassword'>;
+
+export interface GoogleLoginRequestDto {
+    idToken: string;
+}
 
 export interface LoginResponseDto {
     accessToken: string;

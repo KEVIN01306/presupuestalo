@@ -12,3 +12,16 @@ export const changePasswordSchema = z
     });
 
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+
+export const updateProfileSchema = z.object({
+    firstName: z.string().trim().min(1, 'El nombre es obligatorio').max(80),
+    lastName: z.string().trim().min(1, 'El apellido es obligatorio').max(80),
+    avatarUrl: z
+        .string()
+        .trim()
+        .url('Debe ser una URL válida')
+        .optional()
+        .or(z.literal('')),
+});
+
+export type UpdateProfileFormValues = z.infer<typeof updateProfileSchema>;

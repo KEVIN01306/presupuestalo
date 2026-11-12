@@ -19,10 +19,9 @@ class JwtProvider {
     
     async generateTokens(
         userId: string,
-        roles: string[],
-        permissions: string[]
+        email?: string
     ) {
-        const payload: JWTPayload = { roles, permissions };
+        const payload: JWTPayload = email ? { email } : {};
 
         const accessToken = await new SignJWT(payload)
             .setProtectedHeader({ alg: 'HS256' })

@@ -73,7 +73,6 @@ async function runTests() {
         passwordHash: initialHash,
         firstName: 'Test',
         lastName: 'OTP User',
-        roles: ['USER'],
     });
 
     console.log(`✅ [1/9] Created test user: ${testEmail} (${testUser.id})`);
@@ -197,7 +196,6 @@ async function runTests() {
     } finally {
         // Clean up test user
         try {
-            await prisma.userRole.deleteMany({ where: { userId: testUser.id } });
             await prisma.auditLog.deleteMany({ where: { userId: testUser.id } });
             await prisma.userSession.deleteMany({ where: { userId: testUser.id } });
             await prisma.user.delete({ where: { id: testUser.id } });

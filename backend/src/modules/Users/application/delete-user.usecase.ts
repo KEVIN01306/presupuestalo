@@ -22,8 +22,8 @@ export class DeleteUserUseCase {
 
             await this.auditLogService.record({
                 userId: context?.userId,
-                action: 'DELETE',
-                resource: 'user',
+                action: "DELETE",
+                resource: "user",
                 resourceId: id,
                 context,
                 details: {
@@ -32,9 +32,8 @@ export class DeleteUserUseCase {
                         email: user.email,
                         firstName: user.firstName,
                         lastName: user.lastName,
-                        roles: user.roles
-                    }
-                }
+                    },
+                },
             });
 
             return deletedUser;
@@ -49,4 +48,3 @@ export class DeleteUserUseCase {
         }
     }
 }
-

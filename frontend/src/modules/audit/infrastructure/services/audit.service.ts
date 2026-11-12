@@ -2,7 +2,7 @@ import { api } from '../../../../core/api/axios.instance';
 import type {
     AuditLogItem,
     AuditFilters,
-    PaginatedAuditLogsResponse
+    PaginatedAuditLogsResponse,
 } from '../../domain/audit.entity';
 
 interface ApiResponse<T> {
@@ -21,7 +21,7 @@ export const getAuditLogsPaginated = async (
     limit: number = 10,
     filters?: AuditFilters
 ): Promise<PaginatedAuditLogsResponse> => {
-    const params: Record<string, any> = { page, limit };
+    const params: Record<string, string | number> = { page, limit };
 
     if (filters) {
         if (filters.action) params.action = filters.action;
@@ -33,7 +33,7 @@ export const getAuditLogsPaginated = async (
         if (filters.dateTo) params.dateTo = filters.dateTo;
     }
 
-    const response = await api.get<ApiResponse<AuditLogItem[]>>('/audit-logs', { params });
+    const response = await api.get<ApiResponse<AuditLogItem[]>>('/audit', { params });
 
     return {
         data: response.data.data,
@@ -44,6 +44,6 @@ export const getAuditLogsPaginated = async (
 };
 
 export const getAuditLogById = async (id: string): Promise<AuditLogItem> => {
-    const response = await api.get<ApiResponse<AuditLogItem>>(`/audit-logs/${id}`);
+    const response = await api.get<ApiResponse<AuditLogItem>>(`/audit/${id}`);
     return response.data.data;
 };

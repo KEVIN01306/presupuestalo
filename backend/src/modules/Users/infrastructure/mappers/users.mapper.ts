@@ -5,41 +5,42 @@ export class UsersMapper {
         return {
             id: user.id,
             email: user.email,
-            passwordHash: user.passwordHash,
+            passwordHash: user.passwordHash ?? null,
+            googleId: user.googleId ?? null,
             firstName: user.firstName,
             lastName: user.lastName,
-            isActive: user.isActive,
+            avatarUrl: user.avatarUrl ?? null,
+            isActive: Boolean(user.isActive),
             isVerify: Boolean(user.isVerify),
             createdAt: user.createdAt,
-            updatedAt: user.updatedAt
+            updatedAt: user.updatedAt,
         };
     }
 
     static toGetUser(user: any): GetUser {
-        const roles = user.userRoles?.map((ur: any) => ur.role?.name || ur.role).filter(Boolean) || [];
         return {
             id: user.id,
             email: user.email,
+            googleId: user.googleId ?? null,
             firstName: user.firstName,
             lastName: user.lastName,
-            isActive: user.isActive,
+            avatarUrl: user.avatarUrl ?? null,
+            isActive: Boolean(user.isActive),
             isVerify: Boolean(user.isVerify),
-            roles,
             createdAt: user.createdAt,
-            updatedAt: user.updatedAt
+            updatedAt: user.updatedAt,
         };
     }
 
     static toGetSimpleUser(user: any): GetSimpleUser {
-        const roles = user.userRoles?.map((ur: any) => ur.role?.name || ur.role).filter(Boolean) || [];
         return {
             id: user.id,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
-            isActive: user.isActive,
+            avatarUrl: user.avatarUrl ?? null,
+            isActive: Boolean(user.isActive),
             isVerify: Boolean(user.isVerify),
-            roles
         };
     }
 }

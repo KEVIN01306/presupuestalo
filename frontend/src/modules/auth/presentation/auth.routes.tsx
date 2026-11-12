@@ -2,6 +2,7 @@ import type { RouteObject } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import {
     LoginPage,
+    RegisterPage,
     PasswordResetRequestPage,
     PasswordResetVerifyPage,
     PasswordResetNewPage,
@@ -18,48 +19,27 @@ export const authRoutes: RouteObject[] = [
         element: <LoginPage />,
     },
     {
+        path: 'register',
+        element: <RegisterPage />,
+    },
+    {
         path: 'verify-account',
         children: [
-            {
-                index: true,
-                element: <VerifyAccountRequestPage />,
-            },
-            {
-                path: 'otp',
-                element: <VerifyAccountOtpPage />,
-            },
-            {
-                path: 'password',
-                element: <VerifyAccountPasswordPage />,
-            },
-            {
-                path: 'success',
-                element: <VerifyAccountSuccessPage />,
-            },
+            { index: true, element: <VerifyAccountRequestPage /> },
+            { path: 'otp', element: <VerifyAccountOtpPage /> },
+            { path: 'password', element: <VerifyAccountPasswordPage /> },
+            { path: 'success', element: <VerifyAccountSuccessPage /> },
         ],
     },
     {
         path: 'change-password',
         children: [
-            {
-                index: true,
-                element: <PasswordResetRequestPage />,
-            },
-            {
-                path: 'verify',
-                element: <PasswordResetVerifyPage />,
-            },
-            {
-                path: 'new',
-                element: <PasswordResetNewPage />,
-            },
-            {
-                path: 'success',
-                element: <PasswordResetSuccessPage />,
-            },
+            { index: true, element: <PasswordResetRequestPage /> },
+            { path: 'verify', element: <PasswordResetVerifyPage /> },
+            { path: 'new', element: <PasswordResetNewPage /> },
+            { path: 'success', element: <PasswordResetSuccessPage /> },
         ],
     },
-    // Aliases for convenience
     {
         path: 'reset-password',
         element: <Navigate to="/auth/change-password" replace />,
@@ -69,4 +49,3 @@ export const authRoutes: RouteObject[] = [
         element: <Navigate to="/auth/change-password" replace />,
     },
 ];
-

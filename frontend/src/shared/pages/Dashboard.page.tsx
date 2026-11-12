@@ -1,266 +1,103 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    Box,
-    Card,
-    CardContent,
-    Typography,
-    Stack,
-    CircularProgress,
-    Button,
-} from '@mui/material';
-import { Business, Folder, Image, ArrowForward, PermMedia } from '@mui/icons-material';
+import { Alert, Box, Button, Card, CardContent, CircularProgress, Stack, Typography } from '@mui/material';
+import { AddOutlined, ArrowForwardOutlined } from '@mui/icons-material';
+import { useAuthStore } from '../../core/store/authStore';
+import type { BudgetDashboardSummary } from '../../modules/budgets/domain/interfaces/budget.interface';
+import { BudgetRepository } from '../../modules/budgets/infrastructure/repositories/budget.repository';
+import { GlobalProjectionCard } from '../../modules/budgets/presentation/components/GlobalProjectionCard';
+import { ItemProgressList } from '../../modules/budgets/presentation/components/ItemProgressList';
+import { MemberSegmentationTable } from '../../modules/budgets/presentation/components/MemberSegmentationTable';
+import { PersonalSummaryCard } from '../../modules/budgets/presentation/components/PersonalSummaryCard';
+import { DashboardChartsSection } from '../../modules/budgets/presentation/components/charts/DashboardChartsSection';
 import { PageHeader } from '../components/common/PageHeader';
-import { ListTableSimple, type Column } from '../components/tables/ListTableSimple';
-import { getBrandStats, getAllBrands } from '../../modules/brands/infrastructure/services/brands.service';
-import type { BrandDto, BrandStatsDto } from '../../modules/brands/domain/dto/brands.dto';
 
 export const DashboardPage: React.FC = () => {
     const navigate = useNavigate();
-
-    const [stats, setStats] = useState<BrandStatsDto>({
-        totalBrands: 0,
-        totalFolders: 0,
-        totalImages: 0,
-        totalAssets: 0,
-    });
-    const [recentBrands, setRecentBrands] = useState<BrandDto[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { activeTeamId, activeTeam } = useAuthStore();
+    const [summary, setSummary] = useState<BudgetDashboardSummary | null>(null);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const loadDashboardData = async () => {
+        let cancelled = false;
+        const load = async () => {
+            await Promise.resolve();
+            if (cancelled) return;
+            if (!activeTeamId) {
+                setSummary(null);
+                setLoading(false);
+                return;
+            }
             setLoading(true);
             try {
-                const [statsData, brandsData] = await Promise.all([
-                    getBrandStats(),
-                    getAllBrands(),
-                ]);
-                setStats(statsData);
-                setRecentBrands(brandsData.slice(0, 5));
-            } catch (err) {
-                console.error('Error loading dashboard data', err);
+                const list = await BudgetRepository.listarPorEquipo(activeTeamId);
+                const active = list.find((b) => b.status === 'ACTIVE') ?? list[0];
+                const res = active ? await BudgetRepository.obtenerResumen(active.id) : null;
+                if (!cancelled) setSummary(res);
+            } catch {
+                if (!cancelled) setSummary(null);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
-
-        loadDashboardData();
-    }, []);
-
-    const columns: Column[] = [
-        {
-            id: 'name',
-            name: 'Brand',
-            format: (value: string) => (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontWeight: 600, fontSize: '13px', color: 'text.primary' }}>
-                        {value}
-                    </Typography>
-                </Box>
-            ),
-        },
-        {
-            id: 'description',
-            name: 'Description',
-            format: (value: string | null) => (
-                <Typography sx={{ fontSize: '13px', color: 'text.secondary' }}>
-                    {value || '—'}
-                </Typography>
-            ),
-        },
-        {
-            id: 'folders',
-            name: 'Directories',
-            format: (_: any, row: BrandDto) => (
-                <Typography sx={{ fontSize: '13px', color: 'text.primary', fontWeight: 500 }}>
-                    {row._count?.folders ?? 0}
-                </Typography>
-            ),
-        },
-        {
-            id: 'images',
-            name: 'Images',
-            format: (_: any, row: BrandDto) => (
-                <Typography sx={{ fontSize: '13px', color: 'text.primary', fontWeight: 500 }}>
-                    {row._count?.images ?? 0}
-                </Typography>
-            ),
-        },
-        {
-            id: 'createdAt',
-            name: 'Created Date',
-            format: (value: string) => (
-                <Typography sx={{ fontSize: '12px', color: 'text.secondary' }}>
-                    {new Date(value).toLocaleDateString()}
-                </Typography>
-            ),
-        },
-    ];
+        void load();
+        return () => {
+            cancelled = true;
+        };
+    }, [activeTeamId]);
 
     return (
-        <Box sx={{ width: '100%', py: 1 }}>
+        <Box>
             <PageHeader
                 title="Dashboard"
-                subtitle="System overview, brands and directories status"
-            />
-
-            {/* Metric KPI Cards */}
-            <Box
-                sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-                    gap: 2.5,
-                    mb: 4,
-                }}
+                subtitle={
+                    activeTeam
+                        ? `Resumen de ${activeTeam.name}${activeTeam.currency ? ` · ${activeTeam.currency.code} (${activeTeam.currency.symbol})` : ''}`
+                        : 'Resumen de tus presupuestos'
+                }
             >
-                <Card
-                    elevation={0}
-                    sx={{
-                        borderRadius: '16px',
-                        border: '0.5px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                        p: 1,
-                    }}
-                >
-                    <CardContent>
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-                        >
-                            <Box>
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
-                                    Total Brands
-                                </Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5, color: 'text.primary' }}>
-                                    {loading ? <CircularProgress size={24} /> : stats.totalBrands}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-                                <Business sx={{ fontSize: 28 }} />
-                            </Box>
-                        </Stack>
-                    </CardContent>
-                </Card>
-
-                <Card
-                    elevation={0}
-                    sx={{
-                        borderRadius: '16px',
-                        border: '0.5px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                        p: 1,
-                    }}
-                >
-                    <CardContent>
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-                        >
-                            <Box>
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
-                                    Total Folders
-                                </Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5, color: 'text.primary' }}>
-                                    {loading ? <CircularProgress size={24} /> : stats.totalFolders}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-                                <Folder sx={{ fontSize: 28 }} />
-                            </Box>
-                        </Stack>
-                    </CardContent>
-                </Card>
-
-                <Card
-                    elevation={0}
-                    sx={{
-                        borderRadius: '16px',
-                        border: '0.5px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                        p: 1,
-                    }}
-                >
-                    <CardContent>
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-                        >
-                            <Box>
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
-                                    Total Images
-                                </Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5, color: 'text.primary' }}>
-                                    {loading ? <CircularProgress size={24} /> : stats.totalImages}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-                                <Image sx={{ fontSize: 28 }} />
-                            </Box>
-                        </Stack>
-                    </CardContent>
-                </Card>
-
-                <Card
-                    elevation={0}
-                    sx={{
-                        borderRadius: '16px',
-                        border: '0.5px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                        p: 1,
-                    }}
-                >
-                    <CardContent>
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-                        >
-                            <Box>
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
-                                    Total Assets
-                                </Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5, color: 'text.primary' }}>
-                                    {loading ? <CircularProgress size={24} /> : (stats.totalAssets ?? stats.totalImages)}
-                                </Typography>
-                            </Box>
-                            <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
-                                <PermMedia sx={{ fontSize: 28 }} />
-                            </Box>
-                        </Stack>
-                    </CardContent>
-                </Card>
-            </Box>
-
-            {/* Recent Brands Section */}
-            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '16px', color: 'text.primary' }}>
-                        Recent Brands
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '13px' }}>
-                        Overview of the latest brands added to the catalog
-                    </Typography>
-                </Box>
                 <Button
-                    endIcon={<ArrowForward />}
-                    onClick={() => navigate('/brands')}
-                    sx={{ textTransform: 'none', fontWeight: 500, fontSize: '13px' }}
+                    variant="outlined"
+                    endIcon={<ArrowForwardOutlined />}
+                    onClick={() => navigate(summary ? `/budgets/${summary.budget.id}` : '/budgets')}
+                    sx={{ borderRadius: '200px', textTransform: 'none' }}
                 >
-                    View all brands
+                    {summary ? 'Abrir presupuesto' : 'Ir a presupuestos'}
                 </Button>
-            </Box>
+            </PageHeader>
 
-            <ListTableSimple
-                columns={columns}
-                data={recentBrands}
-            />
+            {!activeTeamId ? (
+                <Alert severity="info">Selecciona o crea un equipo para ver tu resumen financiero.</Alert>
+            ) : loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>
+            ) : !summary ? (
+                <Card sx={{ borderRadius: '24px', border: '1px solid #dadce0', boxShadow: 'none' }}>
+                    <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                        <Typography variant="h6" sx={{ color: '#202124', fontWeight: 500, mb: 1 }}>
+                            No tienes presupuestos activos
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#5f6368', mb: 2.5 }}>
+                            Crea tu primer presupuesto para comenzar a registrar ingresos, rubros y gastos.
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddOutlined />}
+                            onClick={() => navigate('/budgets')}
+                            sx={{ borderRadius: '200px', textTransform: 'none', px: 3 }}
+                        >
+                            Crear presupuesto
+                        </Button>
+                    </CardContent>
+                </Card>
+            ) : (
+                <Stack sx={{ gap: 3 }}>
+                    <PersonalSummaryCard summary={summary.currentUserSummary} />
+                    <GlobalProjectionCard global={summary.global} />
+                    <DashboardChartsSection analytics={summary.analytics} />
+                    <MemberSegmentationTable rows={summary.userSegmentation} />
+                    <ItemProgressList items={summary.itemsProgress} />
+                </Stack>
+            )}
         </Box>
     );
 };

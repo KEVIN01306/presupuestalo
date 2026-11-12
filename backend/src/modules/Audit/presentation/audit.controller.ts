@@ -15,20 +15,20 @@ export class AuditController extends BaseController {
 
     list = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const currentUser = this.obtenerEntorno(res);
             const page = req.query.page ? Math.max(1, parseInt(req.query.page as string, 10)) : 1;
             const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit as string, 10)) : 10;
             const offset = (page - 1) * limit;
 
-            const filters: AuditFilters = {};
+            const filters: AuditFilters = {
+                userId: currentUser.id,
+            };
 
             if (req.query.action) {
                 filters.action = req.query.action as AuditAction;
             }
             if (req.query.resource) {
                 filters.resource = String(req.query.resource).toLowerCase().trim();
-            }
-            if (req.query.userId) {
-                filters.userId = String(req.query.userId);
             }
             if (req.query.resourceId) {
                 filters.resourceId = String(req.query.resourceId);

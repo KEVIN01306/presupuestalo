@@ -2,19 +2,28 @@ import { Router } from "express";
 import { usersController } from "../users.module.js";
 import { AuthMiddleware } from "@app/middleware/Auth.middleware.js";
 import { ValidatedMiddleware } from "@app/middleware/Validated.middleware.js";
-import { CreateUserSchema, UpdateUserSchema, UserIdSchema, ChangePasswordSchema } from "./users.schemas.js";
+import {
+    CreateUserSchema,
+    UpdateUserSchema,
+    UpdateProfileSchema,
+    LookupByEmailQuerySchema,
+    UserIdSchema,
+    ChangePasswordSchema,
+} from "./users.schemas.js";
 
 const router = Router();
 const authMiddleware = new AuthMiddleware();
 const validatedMiddleware = new ValidatedMiddleware();
 
-// Protect routes - requires authentication
-router.use(authMiddleware.routeProtect);
+// Protect all routes - requires valid JWT and active UserSession
+router.use(authMiddleware.protegerRuta);
 
-router.get(
-    "/roles",
-    authMiddleware.checkPermissionSome(["users:create", "users:update", "roles:read", "users:read"]),
-    usersController.listRoles
+router.get("/me", usersController.getProfile);
+
+router.put(
+    "/me",
+    validatedMiddleware.validateBody(UpdateProfileSchema),
+    usersController.updateProfile
 );
 
 router.patch(
@@ -24,21 +33,21 @@ router.patch(
 );
 
 router.get(
-    "/",
-    authMiddleware.checkPermission("users:read"),
-    usersController.list
+    "/lookup",
+    validatedMiddleware.validateQuery(LookupByEmailQuerySchema),
+    usersController.lookupByEmail
 );
+
+router.get("/", usersController.list);
 
 router.post(
     "/",
-    authMiddleware.checkPermission("users:create"),
     validatedMiddleware.validateBody(CreateUserSchema),
     usersController.create
 );
 
 router.put(
     "/:id",
-    authMiddleware.checkPermission("users:update"),
     validatedMiddleware.validateParams(UserIdSchema),
     validatedMiddleware.validateBody(UpdateUserSchema),
     usersController.update
@@ -46,21 +55,18 @@ router.put(
 
 router.patch(
     "/:id/activate",
-    authMiddleware.checkPermission("users:update"),
     validatedMiddleware.validateParams(UserIdSchema),
     usersController.activate
 );
 
 router.patch(
     "/:id/disable",
-    authMiddleware.checkPermission("users:update"),
     validatedMiddleware.validateParams(UserIdSchema),
     usersController.disable
 );
 
 router.delete(
     "/:id",
-    authMiddleware.checkPermission("users:delete"),
     validatedMiddleware.validateParams(UserIdSchema),
     usersController.delete
 );

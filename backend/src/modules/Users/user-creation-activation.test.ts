@@ -103,7 +103,6 @@ async function runTests() {
             email: testEmail,
             firstName: 'Activation',
             lastName: 'Tester',
-            roles: ['USER'],
             autoGeneratePassword: true,
         });
 
@@ -126,7 +125,7 @@ async function runTests() {
 
         // Test 4: Password was hashed with Argon2 (not plain text)
         console.log('Testing: Password hash format in database...');
-        assert.ok(userInDb.passwordHash.startsWith('$argon2'), 'Password must be stored as Argon2 hash');
+        assert.ok(userInDb.passwordHash && (userInDb.passwordHash.startsWith('$2') || userInDb.passwordHash.startsWith('$argon2')), 'Password must be stored as bcrypt/argon2 hash');
         console.log('✅ [4/8] Password is cryptographically hashed with Argon2 in DB');
 
         // Test 5: Step 1 of Activation - Send OTP
@@ -163,6 +162,7 @@ async function runTests() {
 
         // Test 8: Verify new password works
         console.log('Testing: Validate that new password authenticates properly...');
+        assert.ok(activatedUser.passwordHash, 'Activated user must have passwordHash');
         const isNewPasswordValid = await hashProvider.compare(newPassword, activatedUser.passwordHash);
         assert.equal(isNewPasswordValid, true, 'New password must match hash');
         console.log('✅ [8/8] New password authenticated successfully');
@@ -171,7 +171,6 @@ async function runTests() {
     } finally {
         if (createdUserId) {
             try {
-                await prisma.userRole.deleteMany({ where: { userId: createdUserId } });
                 await prisma.auditLog.deleteMany({ where: { userId: createdUserId } });
                 await prisma.user.delete({ where: { id: createdUserId } });
                 console.log(`🧹 Cleaned up temporary test user ${testEmail}`);

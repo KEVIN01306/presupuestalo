@@ -5,7 +5,7 @@ import { refreshSession } from '../../modules/auth/infrastructure/services/auth.
 
 /**
  * Authenticated Axios instance.
- * Automatically attaches the access token from the auth store on every request.
+ * Automatically attaches Bearer accessToken and x-team-id header from auth store.
  * Handles 401 responses by refreshing the token and retrying the request.
  */
 export const api = axios.create({
@@ -17,33 +17,32 @@ export const api = axios.create({
     timeout: 60000,
 });
 
-// Request interceptor — attach access token
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        const token = useAuthStore.getState().accessToken;
-        if (token && config.headers) {
-            config.headers.Authorization = `Bearer ${token}`;
+        const { accessToken, activeTeamId } = useAuthStore.getState();
+        if (accessToken && config.headers) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+        }
+        if (activeTeamId && config.headers) {
+            config.headers['x-team-id'] = activeTeamId;
         }
         return config;
     },
-    (error) => Promise.reject(error),
+    (error) => Promise.reject(error)
 );
 
-// Shared promise for concurrent 401 handling
 let refreshPromise: Promise<string> | null = null;
 
-// Response interceptor — handle token expiry & auto-refresh
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        const originalRequest = error.config;
+        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        if (axios.isAxiosError(error) && error.response) {
+        if (axios.isAxiosError(error) && error.response && originalRequest) {
             const status = error.response.status;
-            const code = (error.response.data as any)?.code;
-
-            // Check if 401 and not already retried
-            const isTokenExpired = status === 401 && (code === 'TOKEN_EXPIRED' || code === 'INVALID_TOKEN' || !code);
+            const code = (error.response.data as { code?: string } | undefined)?.code;
+            const isAuthEndpoint = originalRequest.url?.includes('/auth/refresh') || originalRequest.url?.includes('/auth/login');
+            const isTokenExpired = status === 401 && !isAuthEndpoint && (code === 'TOKEN_EXPIRED' || code === 'INVALID_TOKEN' || !code);
 
             if (isTokenExpired && !originalRequest._retry) {
                 originalRequest._retry = true;
@@ -74,5 +73,5 @@ api.interceptors.response.use(
         }
 
         return Promise.reject(error);
-    },
+    }
 );

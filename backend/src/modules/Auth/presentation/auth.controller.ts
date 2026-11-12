@@ -1,5 +1,7 @@
 import ResponseHttp from "@app/http/response.http.js";
 import type { LoginUseCase } from "../application/login.usecase.js";
+import type { RegisterUseCase } from "../application/register.usecase.js";
+import type { GoogleLoginUseCase } from "../application/google-login.usecase.js";
 import type { Request, Response, NextFunction } from "express";
 import AppError from "@shared/errors/AppError.js";
 import type { RefreshTokenUseCase } from "../application/refresh-token.usecase.js";
@@ -13,9 +15,9 @@ import BaseController from "@presentation/base.controller.js";
 const COOKIE_OPTIONS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: 'strict' as const,
+    sameSite: "strict" as const,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/'
+    path: "/",
 };
 
 const REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
@@ -26,12 +28,50 @@ export class AuthController extends BaseController {
         private readonly refreshTokenUseCase: RefreshTokenUseCase,
         private readonly getProfileUseCase: GetProfileUseCase,
         private readonly logoutUseCase: LogoutUseCase,
+        private readonly registerUseCase: RegisterUseCase,
+        private readonly googleLoginUseCase: GoogleLoginUseCase,
         private readonly sendOtpUseCase?: SendOtpUseCase,
         private readonly verifyOtpUseCase?: VerifyOtpUseCase,
         private readonly resetPasswordWithOtpUseCase?: ResetPasswordWithOtpUseCase
     ) {
         super();
     }
+
+    register = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const auditContext = this.getAuditContext(req, res);
+            const { accessToken, refreshToken, user } = await this.registerUseCase.execute(
+                req.body,
+                auditContext
+            );
+
+            res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
+
+            return res.status(201).json(
+                ResponseHttp.success("User registered successfully", { accessToken, user })
+            );
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    googleLogin = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const auditContext = this.getAuditContext(req, res);
+            const { accessToken, refreshToken, user } = await this.googleLoginUseCase.execute(
+                req.body,
+                auditContext
+            );
+
+            res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, COOKIE_OPTIONS);
+
+            return res.status(200).json(
+                ResponseHttp.success("Google login successful", { accessToken, user })
+            );
+        } catch (error) {
+            next(error);
+        }
+    };
 
     login = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -65,8 +105,8 @@ export class AuthController extends BaseController {
             res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
-                sameSite: 'strict',
-                path: '/'
+                sameSite: "strict",
+                path: "/",
             });
 
             return res.status(200).json(
@@ -92,7 +132,6 @@ export class AuthController extends BaseController {
             return res.status(200).json(
                 ResponseHttp.success("Token renewed", { accessToken, user })
             );
-
         } catch (error) {
             next(error);
         }
@@ -156,7 +195,7 @@ export class AuthController extends BaseController {
             const auditContext = this.getAuditContext(req, res);
             await this.resetPasswordWithOtpUseCase.execute(req.body, auditContext);
             return res.status(200).json(
-                ResponseHttp.success("Contraseña actualizada exitosamente", null)
+                ResponseHttp.success("Password reset successfully", null)
             );
         } catch (error) {
             next(error);

@@ -1,11 +1,9 @@
 import {
     DashboardOutlined,
-    BusinessOutlined,
-    FolderOutlined,
-    GroupOutlined,
-    AdminPanelSettingsOutlined,
+    AccountBalanceWalletOutlined,
+    GroupsOutlined,
     ManageHistoryOutlined,
-    ShieldOutlined,
+    PersonOutlineOutlined,
 } from '@mui/icons-material';
 import type { ElementType } from 'react';
 
@@ -15,64 +13,39 @@ export interface MenuItem {
     group?: string;
     link?: string;
     icon?: ElementType;
-    permissions?: string[];
-    requiresStudent?: boolean;
-    requiresTeacher?: boolean;
     children?: MenuItem[];
 }
 
 const MenuItems: MenuItem[] = [
-    { group: 'Main' },
+    { group: 'Principal' },
     {
         name: 'Dashboard',
         icon: DashboardOutlined,
         link: '/',
     },
-
-    { group: 'Asset Management', permissions: ['brands:read', 'folders:read', 'assets:read'] },
+    { group: 'Gestión' },
     {
-        module: 'Catalog',
-        name: 'Brands',
-        icon: BusinessOutlined,
-        link: '/brands',
-        permissions: ['brands:read'],
+        module: 'Budgets',
+        name: 'Presupuestos',
+        icon: AccountBalanceWalletOutlined,
+        link: '/budgets',
     },
     {
-        module: 'Directories',
-        name: 'Directories Tree',
-        icon: FolderOutlined,
-        link: '/directorios',
-        permissions: ['folders:read', 'assets:read', 'brands:read'],
+        module: 'Teams',
+        name: 'Equipos',
+        icon: GroupsOutlined,
+        link: '/teams',
     },
-
-    { group: 'Administration', permissions: ['users:read', 'roles:read', 'audit:read', 'roles:permissions:update'] },
-    {
-        module: 'Users',
-        name: 'Users Management',
-        icon: GroupOutlined,
-        link: '/users',
-        permissions: ['users:read'],
-    },
-    {
-        module: 'Roles',
-        name: 'Roles & Permissions',
-        icon: ShieldOutlined,
-        link: '/roles',
-        permissions: ['roles:read', 'roles:permissions:update'],
-    },
+    { group: 'Sistema' },
     {
         module: 'Audit',
-        name: 'Audit Logs',
+        name: 'Auditoría',
         icon: ManageHistoryOutlined,
         link: '/audit-logs',
-        permissions: ['audit:read'],
     },
-
-    { group: 'Account' },
-
     {
-        name: 'My Profile',
-        icon: AdminPanelSettingsOutlined,
+        name: 'Perfil',
+        icon: PersonOutlineOutlined,
         link: '/profile',
     },
 ];

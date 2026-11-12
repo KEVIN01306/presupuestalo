@@ -1,139 +1,157 @@
-import { PrismaClient } from '@prisma/client';
-import { Argon2HashProvider } from '../src/shared/infrastructure/argon2-hash.provider';
+import { PrismaClient } from "@prisma/client";
+// import { BcryptHashProvider } from "../src/shared/infrastructure/bcrypt-hash.provider.js";
 
 const prisma = new PrismaClient();
-const hashProvider = new Argon2HashProvider();
+// const hashProvider = new BcryptHashProvider();
+
+const DEFAULT_CURRENCIES = [
+    { code: "GTQ", name: "Quetzal", symbol: "Q" },
+    { code: "USD", name: "Dólar estadounidense", symbol: "$" },
+    { code: "HNL", name: "Lempira", symbol: "L" },
+    { code: "NIO", name: "Córdoba oro", symbol: "C$" },
+    { code: "CRC", name: "Colón costarricense", symbol: "₡" },
+    { code: "PAB", name: "Balboa", symbol: "B/." },
+    { code: "MXN", name: "Peso mexicano", symbol: "$" },
+] as const;
 
 async function main() {
-
-    const usuarioAdmin = await prisma.user.findFirst({
-        where: { email: 'kevin01306@gmail.com' },
-        include: {
-            userRoles: {
-                select: {
-                    role: {
-                        select: {
-                            name: true,
-                            rolePermissions: {
-                                select: {
-                                    permission: { select: { action: true } }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    if (!usuarioAdmin) {
-        const passwordHash = await hashProvider.hash("12345678");
-        await prisma.user.create({
-            data: {
-                email: 'kevin01306@gmail.com',
-                passwordHash,
-                firstName: "Administrador",
-                lastName: "Sistema",
+    for (const currency of DEFAULT_CURRENCIES) {
+        await prisma.currency.upsert({
+            where: { code: currency.code },
+            update: {
+                name: currency.name,
+                symbol: currency.symbol,
                 isActive: true,
-                userRoles: {
-                    create: {
-                        role: {
-                            connectOrCreate: {
-                                where: { name: "SUPER_ADMIN" },
-                                create: {
-                                    name: "SUPER_ADMIN",
-                                    description: "Administrador del sistema",
-                                    isSystem: true,
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            },
+            create: {
+                code: currency.code,
+                name: currency.name,
+                symbol: currency.symbol,
+                isActive: true,
+            },
         });
     }
+    console.log(`✅ ${DEFAULT_CURRENCIES.length} monedas sincronizadas correctamente.`);
 
-    // Ensure standard roles exist
-    await prisma.role.upsert({
-        where: { name: "ADMIN" },
-        update: {},
-        create: {
-            name: "ADMIN",
-            description: "Administrator with general management permissions",
-            isSystem: false,
-        }
+    const usdCurrency = await prisma.currency.findUnique({
+        where: { code: "USD" },
     });
 
-    await prisma.role.upsert({
-        where: { name: "USER" },
-        update: {},
-        create: {
-            name: "USER",
-            description: "Standard user account",
-            isSystem: false,
-        }
-    });
-
-    // Ensure permissions exist
-    const permissions = [
-        { action: 'users:create', description: 'Create users' },
-        { action: 'users:read', description: 'Read users' },
-        { action: 'users:update', description: 'Update users' },
-        { action: 'users:delete', description: 'Delete users' },
-        { action: 'brands:create', description: 'Create brands' },
-        { action: 'brands:read', description: 'Read brands' },
-        { action: 'brands:update', description: 'Update brands' },
-        { action: 'brands:delete', description: 'Delete brands' },
-        { action: 'folders:create', description: 'Create folders' },
-        { action: 'folders:read', description: 'Read folders' },
-        { action: 'folders:update', description: 'Update folders' },
-        { action: 'folders:delete', description: 'Delete folders' },
-        { action: 'assets:create', description: 'Create assets' },
-        { action: 'assets:read', description: 'Read assets' },
-        { action: 'assets:update', description: 'Update assets' },
-        { action: 'assets:delete', description: 'Delete assets' },
-        { action: 'audit:read', description: 'Read audit logs' },
-        { action: 'roles:create', description: 'Create roles' },
-        { action: 'roles:read', description: 'Read roles' },
-        { action: 'roles:update', description: 'Update roles' },
-        { action: 'roles:delete', description: 'Delete roles' },
-        { action: 'roles:permissions:update', description: 'Assign permissions to roles' },
-    ];
-
-
-    for (const perm of permissions) {
-        await prisma.permission.upsert({
-            where: { action: perm.action },
-            update: {},
-            create: perm
+    if (usdCurrency) {
+        const updatedTeams = await prisma.team.updateMany({
+            where: { currencyId: null },
+            data: { currencyId: usdCurrency.id },
         });
+        console.log(`✅ Equipos sin moneda actualizados a USD: ${updatedTeams.count}`);
     }
 
-    // Connect all permissions to SUPER_ADMIN role
-    const superAdminRole = await prisma.role.findUnique({
-        where: { name: "SUPER_ADMIN" }
+    /*
+    const demoEmail = "kevin01306@gmail.com";
+
+    let demoUser = await prisma.user.findUnique({
+        where: { email: demoEmail },
     });
 
-    if (superAdminRole) {
-        const allPermissions = await prisma.permission.findMany();
-        for (const p of allPermissions) {
-            await prisma.rolePermission.upsert({
-                where: {
-                    roleId_permissionId: {
-                        roleId: superAdminRole.id,
-                        permissionId: p.id
-                    }
+    if (!demoUser) {
+        const passwordHash = await hashProvider.hash("12345678");
+
+        demoUser = await prisma.$transaction(async (tx) => {
+            const user = await tx.user.create({
+                data: {
+                    email: demoEmail,
+                    passwordHash,
+                    firstName: "Kevin",
+                    lastName: "Sánchez",
+                    isActive: true,
+                    isVerify: true,
                 },
-                update: {},
-                create: {
-                    roleId: superAdminRole.id,
-                    permissionId: p.id
-                }
             });
+
+            const personalTeam = await tx.team.create({
+                data: {
+                    name: "Mi Espacio Personal",
+                    description: "Espacio personal de presupuestos",
+                    isPersonal: true,
+                    ownerId: user.id,
+                    currencyId: usdCurrency?.id ?? null,
+                },
+            });
+
+            await tx.teamMember.create({
+                data: {
+                    teamId: personalTeam.id,
+                    userId: user.id,
+                    role: "OWNER",
+                },
+            });
+
+            await tx.incomeCategory.createMany({
+                data: [
+                    {
+                        teamId: personalTeam.id,
+                        name: "Salario mensual",
+                        isSystem: false,
+                    },
+                    {
+                        teamId: personalTeam.id,
+                        name: "Sobrante presupuesto anterior",
+                        isSystem: true,
+                    },
+                ],
+            });
+
+            return user;
+        });
+
+        console.log(`✅ Usuario demo creado con espacio personal y categorías por defecto: ${demoEmail}`);
+    } else {
+        // Ensure personal team & default categories exist for demo user
+        const existingPersonalTeam = await prisma.team.findFirst({
+            where: { ownerId: demoUser.id, isPersonal: true },
+        });
+
+        if (!existingPersonalTeam) {
+            await prisma.$transaction(async (tx) => {
+                const personalTeam = await tx.team.create({
+                    data: {
+                        name: "Mi Espacio Personal",
+                        description: "Espacio personal de presupuestos",
+                        isPersonal: true,
+                        ownerId: demoUser!.id,
+                        currencyId: usdCurrency?.id ?? null,
+                    },
+                });
+
+                await tx.teamMember.create({
+                    data: {
+                        teamId: personalTeam.id,
+                        userId: demoUser!.id,
+                        role: "OWNER",
+                    },
+                });
+
+                await tx.incomeCategory.createMany({
+                    data: [
+                        {
+                            teamId: personalTeam.id,
+                            name: "Salario mensual",
+                            isSystem: false,
+                        },
+                        {
+                            teamId: personalTeam.id,
+                            name: "Sobrante presupuesto anterior",
+                            isSystem: true,
+                        },
+                    ],
+                });
+            });
+            console.log(`✅ Espacio personal creado para usuario existente: ${demoEmail}`);
+        } else {
+            console.log(`ℹ️ Usuario demo y espacio personal ya existen: ${demoEmail}`);
         }
     }
+    */
 
-    console.log("✅ Permisos y roles actualizados exitosamente");
     console.log("¡Seed ejecutado con éxito!");
 }
 
@@ -142,7 +160,7 @@ main()
         await prisma.$disconnect();
     })
     .catch(async (e) => {
-        console.error("❌ Error durante la ejecución del seed:", e); // IMPRESCINDIBLE para ver qué falla
+        console.error("❌ Error durante la ejecución del seed:", e);
         await prisma.$disconnect();
-        //process.exit(1);
+        process.exit(1);
     });

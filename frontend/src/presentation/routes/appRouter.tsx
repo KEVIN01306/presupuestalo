@@ -1,12 +1,10 @@
 import { Suspense, lazy } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { authRoutes } from '../../modules/auth/presentation/auth.routes';
-import { brandsRoutes } from '../../modules/brands/presentation/brands.routes';
-import { directoriosRoutes } from '../../modules/directorios/presentation/directorios.routes';
-import { usersRoutes } from '../../modules/users/presentation/users.routes';
+import { budgetsRoutes } from '../../modules/budgets/presentation/budgets.routes';
 import { profileRoutes } from '../../modules/profile/presentation/profile.routes';
 import { auditRoutes } from '../../modules/audit/presentation/audit.routes';
-import { rolesRoutes } from '../../modules/roles/presentation/roles.routes';
+import { teamsRoutes } from '../../modules/teams/presentation/teams.routes';
 import ProtectedRoute from './ProtectedRoute';
 
 import { FullPageLoader } from '../../shared/components/loaders';
@@ -17,7 +15,6 @@ const BlankLayout = lazy(() => import('../layouts/blankLayout'));
 const FullLayout = lazy(() => import('../layouts/fullLayout'));
 
 export const appRouter = createBrowserRouter([
-    // ── Public routes (unauthenticated) ──────────────────────────────────────
     {
         path: '/auth',
         element: (
@@ -27,8 +24,6 @@ export const appRouter = createBrowserRouter([
         ),
         children: [...authRoutes],
     },
-
-    // ── Protected routes (authenticated) ─────────────────────────────────────
     {
         path: '/',
         element: (
@@ -44,50 +39,17 @@ export const appRouter = createBrowserRouter([
                     </Suspense>
                 ),
                 children: [
-                    // Dashboard — default route
-                    {
-                        index: true,
-                        element: <DashboardPage />,
-                    },
-
-                    // Access Denied — reached when RouteProtector denies access
-                    {
-                        path: 'access-denied',
-                        element: <AccessDeniedPage />,
-                    },
-
-                    // ── Module routes ──
-                    {
-                        path: 'brands',
-                        children: [...brandsRoutes],
-                    },
-                    {
-                        path: 'directorios',
-                        children: [...directoriosRoutes],
-                    },
-                    {
-                        path: 'users',
-                        children: [...usersRoutes],
-                    },
-                    {
-                        path: 'audit-logs',
-                        children: [...auditRoutes],
-                    },
-                    {
-                        path: 'roles',
-                        children: [...rolesRoutes],
-                    },
-                    {
-                        path: 'profile',
-                        children: [...profileRoutes],
-                    },
-
+                    { index: true, element: <DashboardPage /> },
+                    { path: 'budgets', children: [...budgetsRoutes] },
+                    { path: 'access-denied', element: <AccessDeniedPage /> },
+                    { path: 'teams', children: [...teamsRoutes] },
+                    { path: 'audit', children: [...auditRoutes] },
+                    { path: 'audit-logs', children: [...auditRoutes] },
+                    { path: 'profile', children: [...profileRoutes] },
                 ],
             },
         ],
     },
-
-    // ── Catch-all — redirect unknown paths to home ────────────────────────────
     {
         path: '*',
         element: <Navigate to="/" replace />,

@@ -9,7 +9,7 @@ app.use(cors({
     origin: ['http://localhost:4001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-team-id']
 }));
 app.set('trust proxy', true);
 // Increase body size limits to accept base64 image payloads (adjust if needed)

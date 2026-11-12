@@ -4,11 +4,12 @@ import BaseController from "@presentation/base.controller.js";
 import type { CreateUserUseCase } from "../application/create-user.usecase.js";
 import type { UpdateUserUseCase } from "../application/update-user.usecase.js";
 import type { ListUsersUseCase } from "../application/list-users.usecase.js";
-import type { ListRolesUseCase } from "../application/list-roles.usecase.js";
 import type { ActivateUserUseCase } from "../application/activate-user.usecase.js";
 import type { DisableUserUseCase } from "../application/disable-user.usecase.js";
 import type { DeleteUserUseCase } from "../application/delete-user.usecase.js";
 import type { ChangePasswordUseCase } from "../application/change-password.usecase.js";
+import type { LookupUserByEmailUseCase } from "../application/lookup-user-by-email.usecase.js";
+import type { UsersRepository } from "../domain/users.repository.js";
 import type { HashProvider } from "@shared/domain/hash.provider.js";
 import AppError from "@shared/errors/AppError.js";
 
@@ -17,15 +18,50 @@ export class UsersController extends BaseController {
         private readonly createUserUseCase: CreateUserUseCase,
         private readonly updateUserUseCase: UpdateUserUseCase,
         private readonly listUsersUseCase: ListUsersUseCase,
-        private readonly listRolesUseCase: ListRolesUseCase,
         private readonly activateUserUseCase: ActivateUserUseCase,
         private readonly disableUserUseCase: DisableUserUseCase,
         private readonly deleteUserUseCase: DeleteUserUseCase,
         private readonly changePasswordUseCase: ChangePasswordUseCase,
+        private readonly lookupUserByEmailUseCase: LookupUserByEmailUseCase,
+        private readonly usersRepository: UsersRepository,
         private readonly hashProvider: HashProvider
     ) {
         super();
     }
+
+    getProfile = async (_req: Request, res: Response, next: NextFunction) => {
+        try {
+            const currentUser = this.obtenerEntorno(res);
+            const user = await this.usersRepository.findById(currentUser.id);
+            if (!user) {
+                throw new AppError("User not found", "USER_NOT_FOUND", 404);
+            }
+            return res.status(200).json(ResponseHttp.success("Profile fetched successfully", user));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    updateProfile = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const currentUser = this.obtenerEntorno(res);
+            const auditContext = this.getAuditContext(req, res);
+            const updated = await this.updateUserUseCase.execute(currentUser.id, req.body, auditContext);
+            return res.status(200).json(ResponseHttp.success("Profile updated successfully", updated));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    lookupByEmail = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { email } = res.locals.query as { email: string };
+            const user = await this.lookupUserByEmailUseCase.execute(email);
+            return res.status(200).json(ResponseHttp.success("User found", user));
+        } catch (error) {
+            next(error);
+        }
+    };
 
     create = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -43,7 +79,7 @@ export class UsersController extends BaseController {
             const id = req.params.id as string;
             const data = req.body;
             const auditContext = this.getAuditContext(req, res);
-            
+
             let passwordHash = undefined;
             if (data.passwordRaw) {
                 passwordHash = await this.hashProvider.hash(data.passwordRaw);
@@ -51,7 +87,7 @@ export class UsersController extends BaseController {
 
             const updateData = {
                 ...data,
-                passwordHash
+                passwordHash,
             };
 
             const user = await this.updateUserUseCase.execute(id, updateData, auditContext);
@@ -70,15 +106,6 @@ export class UsersController extends BaseController {
 
             const { data, total } = await this.listUsersUseCase.execute({ page, limit, q });
             return res.status(200).json(ResponseHttp.pagination("Users fetched successfully", data, total, limit, offset));
-        } catch (error) {
-            next(error);
-        }
-    };
-
-    listRoles = async (req: Request, res: Response, next: NextFunction) => {
-        try {
-            const roles = await this.listRolesUseCase.execute();
-            return res.status(200).json(ResponseHttp.success("Roles fetched successfully", roles));
         } catch (error) {
             next(error);
         }
@@ -108,10 +135,7 @@ export class UsersController extends BaseController {
 
     changePassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userCtx = (req as any).user || res.locals.user;
-            if (!userCtx?.id) {
-                throw new AppError("Unauthorized", "UNAUTHORIZED", 401);
-            }
+            const userCtx = this.obtenerEntorno(res);
             const auditContext = this.getAuditContext(req, res);
             await this.changePasswordUseCase.execute(userCtx.id, req.body, auditContext);
             return res.status(200).json(ResponseHttp.success("Password changed successfully", null));
@@ -130,5 +154,4 @@ export class UsersController extends BaseController {
             next(error);
         }
     };
-
 }

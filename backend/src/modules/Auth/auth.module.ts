@@ -1,9 +1,11 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from "@infrastructure/config/prisma/prisma.config.js";
 import { PrismaAuthRespository } from "./infrastructure/prisma-auth.repository.js";
-import { Argon2HashProvider } from "../../shared/infrastructure/argon2-hash.provider.js";
+import { BcryptHashProvider } from "@shared/infrastructure/bcrypt-hash.provider.js";
 import JwtProvider from "./domain/jwt.provider.js";
 import { HttpOtpProvider } from "./infrastructure/http-otp.provider.js";
 import { LoginUseCase } from "./application/login.usecase.js";
+import { RegisterUseCase } from "./application/register.usecase.js";
+import { GoogleLoginUseCase } from "./application/google-login.usecase.js";
 import { LogoutUseCase } from "./application/logout.usecase.js";
 import { AuthController } from "./presentation/auth.controller.js";
 import { RefreshTokenUseCase } from "./application/refresh-token.usecase.js";
@@ -14,14 +16,14 @@ import { ResetPasswordWithOtpUseCase } from "./application/reset-password-with-o
 import { auditLogService } from "../Audit/audit.module.js";
 import { usersRepository } from "../Users/users.module.js";
 
-const prisma = new PrismaClient();
-
 const authRepository = new PrismaAuthRespository(prisma);
-const hashProvider = new Argon2HashProvider();
+const hashProvider = new BcryptHashProvider();
 const jwtProvider = new JwtProvider();
 const otpProvider = new HttpOtpProvider();
 
 const loginUseCase = new LoginUseCase(authRepository, jwtProvider, hashProvider, auditLogService);
+const registerUseCase = new RegisterUseCase(authRepository, jwtProvider, hashProvider, auditLogService);
+const googleLoginUseCase = new GoogleLoginUseCase(authRepository, jwtProvider, auditLogService);
 const logoutUseCase = new LogoutUseCase(authRepository, auditLogService);
 const refreshTokenUseCase = new RefreshTokenUseCase(authRepository, jwtProvider);
 const getProfileUseCase = new GetProfileUseCase(authRepository);
@@ -40,6 +42,8 @@ export const authController = new AuthController(
     refreshTokenUseCase,
     getProfileUseCase,
     logoutUseCase,
+    registerUseCase,
+    googleLoginUseCase,
     sendOtpUseCase,
     verifyOtpUseCase,
     resetPasswordWithOtpUseCase

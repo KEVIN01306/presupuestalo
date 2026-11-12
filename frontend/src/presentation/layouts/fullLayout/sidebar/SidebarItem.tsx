@@ -14,8 +14,6 @@ import {
 import { ExpandLess, ExpandMore } from '@mui/icons-material';
 import type { MenuItem } from './menuItems';
 import { useSidebar } from './SidebarContext';
-import { useAuthStore } from '../../../../core/store/authStore';
-import { hasSomePermission } from '../../../../core/utils/permissions';
 
 interface SidebarItemProps {
     item: MenuItem;
@@ -25,31 +23,17 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ item }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { isCollapsed, closeMobileSidebar } = useSidebar();
-    const user = useAuthStore((state) => state.user);
-
     const [openSubmenu, setOpenSubmenu] = useState(false);
 
-    // Permission check
-    if (item.permissions && item.permissions.length > 0 && !hasSomePermission(user, item.permissions)) {
-        return null;
-    }
-
-    // 1. Group Header
     if (item.group) {
         if (isCollapsed) {
-            return <Divider sx={{ my: 1, borderColor: '#e2e8f0' }} />;
+            return <Divider sx={{ my: 1 }} />;
         }
         return (
             <Box sx={{ px: 3, pt: 2, pb: 0.5 }}>
                 <Typography
                     variant="caption"
-                    sx={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: '#94a3b8',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05rem',
-                    }}
+                    sx={{ fontWeight: 500, color: '#5f6368', textTransform: 'uppercase', letterSpacing: '0.06em' }}
                 >
                     {item.group}
                 </Typography>
@@ -79,57 +63,26 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ item }) => {
             selected={isActive}
             onClick={handleClick}
             sx={{
-                minHeight: 44,
+                minHeight: 42,
                 px: isCollapsed ? 2 : 2.5,
-                py: 1,
                 mx: isCollapsed ? 1 : 1.5,
                 my: 0.25,
-                borderRadius: '10px',
+                borderRadius: '8px',
                 justifyContent: isCollapsed ? 'center' : 'flex-start',
-                backgroundColor: isActive ? 'rgba(0, 107, 255, 0.08)' : 'transparent',
-                '&:hover': {
-                    backgroundColor: isActive ? 'rgba(0, 107, 255, 0.12)' : '#f8fafc',
-                },
-                '&.Mui-selected': {
-                    backgroundColor: 'rgba(0, 107, 255, 0.08)',
-                    '&:hover': {
-                        backgroundColor: 'rgba(0, 107, 255, 0.14)',
-                    },
-                },
             }}
         >
             {IconComponent && (
-                <ListItemIcon
-                    sx={{
-                        minWidth: 0,
-                        mr: isCollapsed ? 0 : 1.75,
-                        justifyContent: 'center',
-                        color: isActive ? '#006bff' : '#64748b',
-                    }}
-                >
+                <ListItemIcon sx={{ minWidth: 0, mr: isCollapsed ? 0 : 1.75, justifyContent: 'center' }}>
                     <IconComponent sx={{ fontSize: 20 }} />
                 </ListItemIcon>
             )}
-
             {!isCollapsed && (
                 <ListItemText
                     primary={item.name}
-                    slotProps={{
-                        primary: {
-                            variant: 'body2',
-                            sx: {
-                                fontWeight: isActive ? 600 : 500,
-                                color: isActive ? '#006bff' : '#334155',
-                                fontSize: '13px',
-                            },
-                        },
-                    }}
+                    slotProps={{ primary: { variant: 'body2', sx: { fontWeight: isActive ? 500 : 400 } } }}
                 />
             )}
-
-            {!isCollapsed && hasChildren && (
-                openSubmenu ? <ExpandLess sx={{ fontSize: 18, color: '#94a3b8' }} /> : <ExpandMore sx={{ fontSize: 18, color: '#94a3b8' }} />
-            )}
+            {!isCollapsed && hasChildren && (openSubmenu ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />)}
         </ListItemButton>
     );
 
@@ -142,7 +95,6 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({ item }) => {
             ) : (
                 buttonContent
             )}
-
             {hasChildren && !isCollapsed && (
                 <Collapse in={openSubmenu} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding sx={{ pl: 2 }}>
