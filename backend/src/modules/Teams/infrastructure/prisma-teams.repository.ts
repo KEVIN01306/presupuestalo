@@ -178,12 +178,34 @@ export class PrismaTeamsRepository implements TeamsRepository {
 
     async delete(teamId: string): Promise<void> {
         try {
-            const result = await this.prisma.team.deleteMany({
-                where: { id: teamId },
+            await this.prisma.$transaction(async (tx) => {
+                const existing = await tx.team.findUnique({
+                    where: { id: teamId },
+                    select: { id: true },
+                });
+                if (!existing) {
+                    throw new NotFoundPersistenceError();
+                }
+
+                await tx.expense.deleteMany({
+                    where: { budgetItem: { budget: { teamId } } },
+                });
+                await tx.income.deleteMany({
+                    where: { budget: { teamId } },
+                });
+                await tx.budget.deleteMany({
+                    where: { teamId },
+                });
+                await tx.incomeCategory.deleteMany({
+                    where: { teamId },
+                });
+                await tx.teamMember.deleteMany({
+                    where: { teamId },
+                });
+                await tx.team.delete({
+                    where: { id: teamId },
+                });
             });
-            if (result.count === 0) {
-                throw new NotFoundPersistenceError();
-            }
         } catch (error) {
             if (error instanceof NotFoundPersistenceError) throw error;
             throw PrismaErrorMapper.map(error);

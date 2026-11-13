@@ -360,12 +360,28 @@ export class PrismaBudgetsRepository implements BudgetsRepository {
 
     async delete(budgetId: string, teamId: string): Promise<void> {
         try {
-            const result = await this.prisma.budget.deleteMany({
-                where: { id: budgetId, teamId },
+            await this.prisma.$transaction(async (tx) => {
+                const existing = await tx.budget.findFirst({
+                    where: { id: budgetId, teamId },
+                    select: { id: true },
+                });
+                if (!existing) {
+                    throw new NotFoundPersistenceError();
+                }
+
+                await tx.expense.deleteMany({
+                    where: { budgetItem: { budgetId, budget: { teamId } } },
+                });
+                await tx.income.deleteMany({
+                    where: { budgetId, budget: { teamId } },
+                });
+                const result = await tx.budget.deleteMany({
+                    where: { id: budgetId, teamId },
+                });
+                if (result.count === 0) {
+                    throw new NotFoundPersistenceError();
+                }
             });
-            if (result.count === 0) {
-                throw new NotFoundPersistenceError();
-            }
         } catch (error) {
             if (error instanceof NotFoundPersistenceError) throw error;
             throw PrismaErrorMapper.map(error);
